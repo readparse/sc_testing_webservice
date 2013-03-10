@@ -37,50 +37,57 @@ namespace ItemLoader
                     {
                         string TemplateID = tag.Attribute("TemplateID").Value;
                         string ParentID = tag.Attribute("ParentID").Value;
+                        string domainUser = tag.Attribute("User").Value;
                         foreach (XElement item in tag.Descendants())
                         {
                             if (item.Name == "Item")
                             {
-                                using (new Sitecore.SecurityModel.SecurityDisabler())
+                                
+                                if (Sitecore.Security.Accounts.User.Exists(domainUser))
                                 {
-                                    Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
-                                    Sitecore.Data.Items.Item parent = master.GetItem(new Sitecore.Data.ID(ParentID));
-                                    Sitecore.Data.Items.TemplateItem template = master.GetTemplate(new Sitecore.Data.ID(TemplateID));
-
-                                    string ItemName = item.Attribute("Name").Value;
-
-                                    Sitecore.Data.Items.Item newItem = parent.Add(ItemName, template);
-
-                                    newItem.Editing.BeginEdit();
-                                    try
+                                    Sitecore.Security.Accounts.User user = Sitecore.Security.Accounts.User.FromName(domainUser, false);
+                                    using (new Sitecore.Security.Accounts.UserSwitcher(user))
                                     {
+                                        Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
+                                        Sitecore.Data.Items.Item parent = master.GetItem(new Sitecore.Data.ID(ParentID));
+                                        Sitecore.Data.Items.TemplateItem template = master.GetTemplate(new Sitecore.Data.ID(TemplateID));
 
-                                        foreach (XElement field in item.Descendants())
+                                        string ItemName = item.Attribute("Name").Value;
+
+                                        Sitecore.Data.Items.Item newItem = parent.Add(ItemName, template);
+
+                                        newItem.Editing.BeginEdit();
+                                        try
                                         {
-                                            if (field.Name == "Field")
+
+                                            foreach (XElement field in item.Descendants())
                                             {
+                                                if (field.Name == "Field")
+                                                {
 
-                                                string name = field.Attribute("Name").Value;
-                                                string value = field.Attribute("Value").Value;
-                                                
-                                                
-                                                if (field.Attributes().Any(p => p.Name == "Type")) {
-                                                    string type = field.Attribute("Type").Value;
-                                                    if (type == "Date")
+                                                    string name = field.Attribute("Name").Value;
+                                                    string value = field.Attribute("Value").Value;
+
+
+                                                    if (field.Attributes().Any(p => p.Name == "Type"))
                                                     {
-                                                        value = Sitecore.DateUtil.ToIsoDate(DateTime.Parse(value));
+                                                        string type = field.Attribute("Type").Value;
+                                                        if (type == "Date")
+                                                        {
+                                                            value = Sitecore.DateUtil.ToIsoDate(DateTime.Parse(value));
+                                                        }
                                                     }
-                                                }
 
-                                                newItem.Fields[name].Value = value;
+                                                    newItem.Fields[name].Value = value;
+                                                }
                                             }
                                         }
+                                        finally
+                                        {
+                                            newItem.Editing.EndEdit();
+                                        }
+                                        item_id_list.Add(newItem.ID.ToString());
                                     }
-                                    finally
-                                    {
-                                        newItem.Editing.EndEdit();
-                                    }
-                                    item_id_list.Add(newItem.ID.ToString());
                                 }
                             }
                         }
