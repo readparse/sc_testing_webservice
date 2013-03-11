@@ -6,6 +6,7 @@ using System.Web.Services;
 using System.Web.Script.Services;
 using System.Xml.Linq;
 using System.Collections.ObjectModel;
+using Sitecore.Exceptions;
 namespace ItemLoader
 {
     /// <summary>
@@ -54,7 +55,15 @@ namespace ItemLoader
 
                                         string ItemName = item.Attribute("Name").Value;
 
-                                        Sitecore.Data.Items.Item newItem = parent.Add(ItemName, template);
+                                        Sitecore.Data.Items.Item newItem;
+                                        try
+                                        {
+                                             newItem = parent.Add(ItemName, template);
+                                        }
+                                        catch(AccessDeniedException e)
+                                        {
+                                            return item_id_list;
+                                        }
 
                                         newItem.Editing.BeginEdit();
                                         try
