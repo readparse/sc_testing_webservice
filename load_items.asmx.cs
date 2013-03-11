@@ -7,6 +7,7 @@ using System.Web.Script.Services;
 using System.Xml.Linq;
 using System.Collections.ObjectModel;
 using Sitecore.Exceptions;
+
 namespace ItemLoader
 {
     /// <summary>
@@ -21,17 +22,84 @@ namespace ItemLoader
     public class load_items1 : System.Web.Services.WebService
     {
         Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
+        HttpRequest req = HttpContext.Current.Request;
+        [WebMethod]
+        public List<string> media_item_info()
+        {
+            List<string> outlist = new List<string>();
+            string id = req.Params["id"];
+            outlist.Add(id);
+            Sitecore.Data.Items.Item item = master.GetItem(new Sitecore.Data.ID(id));
+            Sitecore.Data.Items.MediaItem media_item = new Sitecore.Data.Items.MediaItem(item);
+            Sitecore.Resources.Media.Media media = Sitecore.Resources.Media.MediaManager.GetMedia(media_item);
+            Sitecore.Resources.Media.MediaData media_data = media.MediaData;
+            
+            return outlist;
+        }
+        
+        [WebMethod]
+        public List<string> create_media_item()
+        {
+            List<string> output = new List<string>();
+            List<HttpPostedFile> files = new List<HttpPostedFile>();
+            if (req.Files.Count > 0)
+            {
+                HttpPostedFile media_file = req.Files["media_file"];
+                output.Add(media_file.FileName);
+                
+                var stream = media_file.InputStream;
+                using (new Sitecore.SecurityModel.SecurityDisabler())
+                {
+                    Sitecore.Resources.Media.MediaCreatorOptions options = new Sitecore.Resources.Media.MediaCreatorOptions();
+                    options.Database = master;
+                    string itemName = media_file.FileName.Replace(".", "_");
+                    output.Add(itemName);
+                    options.Destination = req.Params["destination"] + "/" + itemName;
+                    
+                    //create the item
+                    Sitecore.Data.Items.Item media_item = Sitecore.Resources.Media.MediaManager.Creator.CreateFromStream(stream, media_file.FileName, options);
+                    output.Add(media_item.ID.ToString());
+                    
+                    // change the template
+                    //string TemplateID = "{16692733-9A61-45E6-B0D4-4C0C06F8DD3C}";
+                    //Sitecore.Data.Items.TemplateItem template = master.GetTemplate(new Sitecore.Data.ID(TemplateID));
+                    //media_item.ChangeTemplate(template);
+
+                    // edit the fields
+                    media_item.Editing.BeginEdit();
+                    media_item.Fields["Title"].Value = req.Params["title"];
+                    media_item.Editing.EndEdit();
+                    
+                   
+                }
+            }
+            return output;
+
+            
+            /*
+            using (new Sitecore.SecurityModel.SecurityDisabler())
+            {
+                
+                string ParentID = "{C2902D58-D0D2-4B6C-B93E-87208CFC2C89}";
+                string TemplateID = "{962B53C4-F93B-4DF9-9821-415C867B8903}";
+                Sitecore.Data.Items.TemplateItem template = master.GetTemplate(new Sitecore.Data.ID(TemplateID));
+                Sitecore.Data.Items.Item parent = master.GetItem(new Sitecore.Data.ID(ParentID));
+                Sitecore.Data.Items.Item newitem = parent.Add("foo", template);
+                return newitem.ID.ToString();
+                
+            }
+            */
+        }
+
         [WebMethod]
         public List<string> upload()
         {
             List<string> item_id_list = new List<string>();
-            HttpRequest req = HttpContext.Current.Request;
             if (req.Files.Count == 1)
             {
-                HttpPostedFile file = HttpContext.Current.Request.Files["xml"];
+                HttpPostedFile file = req.Files["xml"];
                 var stream = file.InputStream;
                 var xml = XDocument.Load(stream);
-
                 foreach (XElement tag in xml.Descendants())
                 {
                     if (tag.Name == "Items")
@@ -43,7 +111,6 @@ namespace ItemLoader
                         {
                             if (item.Name == "Item")
                             {
-                                
                                 if (Sitecore.Security.Accounts.User.Exists(domainUser))
                                 {
                                     Sitecore.Security.Accounts.User user = Sitecore.Security.Accounts.User.FromName(domainUser, false);
@@ -112,7 +179,6 @@ namespace ItemLoader
         public Collection<Item> get_items()
         {
             Collection<Item> items = new Collection<Item>();
-            HttpRequest req = HttpContext.Current.Request;
             string list = req.Params["list"];
             string[] id_list = list.Split(':');
             foreach (string id in id_list)
@@ -129,7 +195,6 @@ namespace ItemLoader
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public Item get_item()
         {
-            HttpRequest req = HttpContext.Current.Request;
             string id = req.Params["id"];
             Item item = new Item();
             item.id = id;
@@ -140,7 +205,6 @@ namespace ItemLoader
         [WebMethod]
         public int spiderman()
         {
-            HttpRequest req = HttpContext.Current.Request;
             string list = req.Params["list"];
             string[] id_list = list.Split(':');
             //return id_list.Count();
@@ -161,7 +225,6 @@ namespace ItemLoader
         [WebMethod]
         public bool delete_item()
         {
-            HttpRequest req = HttpContext.Current.Request;
             string id = req.Params["id"];
             using (new Sitecore.SecurityModel.SecurityDisabler())
             {
@@ -175,7 +238,6 @@ namespace ItemLoader
         public List<string> delete()
         {
             List<string> item_id_list = new List<string>();
-            HttpRequest req = HttpContext.Current.Request;
             if (req.Files.Count == 1)
             {
                 HttpPostedFile file = HttpContext.Current.Request.Files["xml"];
