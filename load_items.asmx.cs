@@ -54,7 +54,7 @@ namespace ItemLoader
                 {
                     Sitecore.Resources.Media.MediaCreatorOptions options = new Sitecore.Resources.Media.MediaCreatorOptions();
                     options.Database = master;
-                    string itemName = media_file.FileName.Replace(".", "_");
+                    string itemName = media_file.FileName.Replace(".", "_").Replace("&", "_and_");
                     output.itemName = itemName;
                     options.Destination = req.Params["destination"] + "/" + itemName;
                     
