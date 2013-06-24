@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.Services;
 using System.Web.Script.Services;
@@ -8,26 +9,26 @@ using System.Xml.Linq;
 using System.Collections.ObjectModel;
 using Sitecore.Exceptions;
 
+
 namespace ItemLoader
 {
     /// <summary>
     /// Summary description for load_items1
     /// </summary>
     [WebService(Namespace = "/")]
-    [WebServiceBinding(ConformsTo = WsiProfiles.BasicProfile1_1)]
-    
+    [WebServiceBinding(ConformsTo = WsiProfiles.BasicProfile1_1)]    
     [System.ComponentModel.ToolboxItem(false)]
     // To allow this Web Service to be called from script, using ASP.NET AJAX, uncomment the following line. 
     [System.Web.Script.Services.ScriptService]
     public class load_items1 : System.Web.Services.WebService
     {
         Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
-        HttpRequest request = HttpContext.Current.Request;
+        HttpRequest req = HttpContext.Current.Request;
         [WebMethod]
         public List<string> media_item_info()
         {
             List<string> outlist = new List<string>();
-            string id = request.Params["id"];
+            string id = req.Params["id"];
             outlist.Add(id);
             Sitecore.Data.Items.Item item = master.GetItem(new Sitecore.Data.ID(id));
             Sitecore.Data.Items.MediaItem media_item = new Sitecore.Data.Items.MediaItem(item);
@@ -38,62 +39,68 @@ namespace ItemLoader
         }
         
         [WebMethod]
-        /*
-        The following method takes a sitecore media library destination path, a title, and a media file as
-        upload parameters.  It creates the media item and the media file, in the specified destination path,
-        creating that path if it does not exist.
-        */
-        public Item create_media_item()
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public string create_media_item()
         {
+            CreatedMediaItem output = new CreatedMediaItem();
             List<HttpPostedFile> files = new List<HttpPostedFile>();
+            if (req.Files.Count > 0)
+            {
+                HttpPostedFile media_file = req.Files["media_file"];
+                output.fileName = media_file.FileName;
+                
+                var stream = media_file.InputStream;
+                using (new Sitecore.SecurityModel.SecurityDisabler())
+                {
+                    Sitecore.Resources.Media.MediaCreatorOptions options = new Sitecore.Resources.Media.MediaCreatorOptions();
+                    options.Database = master;
+                    string itemName = media_file.FileName.Replace(".", "_");
+                    output.itemName = itemName;
+                    options.Destination = req.Params["destination"] + "/" + itemName;
+                    
+                    //create the item
+                    Sitecore.Data.Items.Item media_item = Sitecore.Resources.Media.MediaManager.Creator.CreateFromStream(stream, media_file.FileName, options);
+                     output.ID = media_item.ID.ToString();
+                    
+                    // change the template
+                    //string TemplateID = "{16692733-9A61-45E6-B0D4-4C0C06F8DD3C}";
+                    //Sitecore.Data.Items.TemplateItem template = master.GetTemplate(new Sitecore.Data.ID(TemplateID));
+                    //media_item.ChangeTemplate(template);
 
-            HttpPostedFile media_file = request.Files["media_file"];
+                    // edit the fields
+                    media_item.Editing.BeginEdit();
+                    media_item.Fields["Title"].Value = req.Params["title"];
+                    media_item.Editing.EndEdit();
+                    
 
-            var stream = media_file.InputStream;
+                }
+            }
+            return new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(output);
+
+            
+            /*
             using (new Sitecore.SecurityModel.SecurityDisabler())
             {
-                /*
-                any dots in the filename must be replaced.  TODO: there are other characters that also will not work,
-                so we will have to deal with that at some point.  By default, item names must pass the following regex:
-                ^[\w\*\$][\w\s\-\$]*(\(\d{1,}\)){0,1}$
-                Sitecore also doesn't allow, by default, any of the following characters:
-                    /  :  ?  "  <  >  |  [  ]
-                */
-                string itemName = media_file.FileName.Replace(".", "_").Replace("&", "_and_");
-
-                // set the options for the media creation
-                Sitecore.Resources.Media.MediaCreatorOptions options = new Sitecore.Resources.Media.MediaCreatorOptions();
-                options.Database = master;
-                options.Destination = request.Params["destination"] + "/" + itemName;
-
-                //create the item.  Then get that Item's "MediaItem", and then get the MediaItem's "Media". 
-                //From the "Media" object, get the file extension, so we can strip if off the end of the item name
-                //We do this to avoid downloads like "foo.xls.xls"
-                Sitecore.Data.Items.Item item = Sitecore.Resources.Media.MediaManager.Creator.CreateFromStream(stream, media_file.FileName, options);
-                Sitecore.Data.Items.MediaItem media_item = new Sitecore.Data.Items.MediaItem(item);
-                Sitecore.Resources.Media.Media media = Sitecore.Resources.Media.MediaManager.GetMedia(media_item);
-                string new_name = itemName.Replace("_" + media.Extension, "");
-
-                // now edit the Title field and the item's name
-                item.Editing.BeginEdit();
-                item.Fields["Title"].Value = request.Params["title"];
-                item.Name = new_name;
-                item.Editing.EndEdit();
-
-                var i = new Item();
-                i.id = item.ID.ToString();
-                i.load();
-                return i;
+                
+                string ParentID = "{C2902D58-D0D2-4B6C-B93E-87208CFC2C89}";
+                string TemplateID = "{962B53C4-F93B-4DF9-9821-415C867B8903}";
+                Sitecore.Data.Items.TemplateItem template = master.GetTemplate(new Sitecore.Data.ID(TemplateID));
+                Sitecore.Data.Items.Item parent = master.GetItem(new Sitecore.Data.ID(ParentID));
+                Sitecore.Data.Items.Item newitem = parent.Add("foo", template);
+                return newitem.ID.ToString();
+                
             }
+            */
         }
 
         [WebMethod]
-        public List<string> upload()
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public string upload()
         {
             List<string> item_id_list = new List<string>();
-            if (request.Files.Count == 1)
+            if (req.Files.Count == 1)
             {
-                HttpPostedFile file = request.Files["xml"];
+                HttpPostedFile file = req.Files["xml"];
                 var stream = file.InputStream;
                 var xml = XDocument.Load(stream);
                 foreach (XElement tag in xml.Descendants())
@@ -119,13 +126,14 @@ namespace ItemLoader
                                         string ItemName = item.Attribute("Name").Value;
 
                                         Sitecore.Data.Items.Item newItem;
+                                        ItemName = Regex.Replace(ItemName, "[^a-zA-Z0-9]+", " ");
                                         try
                                         {
-                                             newItem = parent.Add(ItemName, template);
+                                             newItem = parent.Add(ItemName.Trim(), template);
                                         }
                                         catch(AccessDeniedException e)
                                         {
-                                            return item_id_list;
+                                            return "Failure"; // item_id_list;
                                         }
 
                                         newItem.Editing.BeginEdit();
@@ -167,7 +175,7 @@ namespace ItemLoader
                 }
                 
             }
-            return item_id_list;
+            return new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(item_id_list);
         }
 
         [WebMethod]
@@ -175,7 +183,7 @@ namespace ItemLoader
         public Collection<Item> get_items()
         {
             Collection<Item> items = new Collection<Item>();
-            string list = request.Params["list"];
+            string list = req.Params["list"];
             string[] id_list = list.Split(':');
             foreach (string id in id_list)
             {
@@ -191,7 +199,7 @@ namespace ItemLoader
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public Item get_item()
         {
-            string id = request.Params["id"];
+            string id = req.Params["id"];
             Item item = new Item();
             item.id = id;
             item.load();
@@ -201,7 +209,7 @@ namespace ItemLoader
         [WebMethod]
         public int spiderman()
         {
-            string list = request.Params["list"];
+            string list = req.Params["list"];
             string[] id_list = list.Split(':');
             //return id_list.Count();
             int count = 0;
@@ -221,7 +229,7 @@ namespace ItemLoader
         [WebMethod]
         public bool delete_item()
         {
-            string id = request.Params["id"];
+            string id = req.Params["id"];
             using (new Sitecore.SecurityModel.SecurityDisabler())
             {
                 var item = master.GetItem(new Sitecore.Data.ID(id));
@@ -234,7 +242,7 @@ namespace ItemLoader
         public List<string> delete()
         {
             List<string> item_id_list = new List<string>();
-            if (request.Files.Count == 1)
+            if (req.Files.Count == 1)
             {
                 HttpPostedFile file = HttpContext.Current.Request.Files["xml"];
                 var stream = file.InputStream;
@@ -284,7 +292,6 @@ namespace ItemLoader
     {
         public string id { get; set; }
         public string name { get; set; }
-        public string url { get; set; }
         public Collection<Field> fields = new Collection<Field>();
 
         public void load()
@@ -297,10 +304,21 @@ namespace ItemLoader
                 Field ff = new Field(field.Name, field.Value, field.Type);
                 this.fields.Add(ff);
             }
-            this.url = Sitecore.Links.LinkManager.GetItemUrl(item);
         }
     }
     
+    public class CreatedMediaItem
+    {
+        public string fileName { get; set; }
+        public string itemName { get; set; }
+        public string ID { get; set; }
+    }
+
+    [Serializable]
+    public class CreatedItem
+    {
+        public List<string> ID { get; set; }
+    }
     
     public class Field
     {
