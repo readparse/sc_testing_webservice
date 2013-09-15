@@ -52,27 +52,30 @@ namespace ItemLoader
                 var stream = media_file.InputStream;
                 using (new Sitecore.SecurityModel.SecurityDisabler())
                 {
-                    Sitecore.Resources.Media.MediaCreatorOptions options = new Sitecore.Resources.Media.MediaCreatorOptions();
-                    options.Database = master;
-                    string itemName = media_file.FileName.Replace(".", "_").Replace("&", "_and_");
-                    output.itemName = itemName;
-                    options.Destination = req.Params["destination"] + "/" + itemName;
-                    
-                    //create the item
-                    Sitecore.Data.Items.Item media_item = Sitecore.Resources.Media.MediaManager.Creator.CreateFromStream(stream, media_file.FileName, options);
-                     output.ID = media_item.ID.ToString();
-                    
-                    // change the template
-                    //string TemplateID = "{16692733-9A61-45E6-B0D4-4C0C06F8DD3C}";
-                    //Sitecore.Data.Items.TemplateItem template = master.GetTemplate(new Sitecore.Data.ID(TemplateID));
-                    //media_item.ChangeTemplate(template);
+                    //using (new Sitecore.Data.DatabaseCacheDisabler())
+                    //{
 
-                    // edit the fields
-                    media_item.Editing.BeginEdit();
-                    media_item.Fields["Title"].Value = req.Params["title"];
-                    media_item.Editing.EndEdit();
-                    
+                        Sitecore.Resources.Media.MediaCreatorOptions options = new Sitecore.Resources.Media.MediaCreatorOptions();
+                        options.Database = master;
+                        string itemName = media_file.FileName.Replace(".", "_").Replace("&", "_and_");
+                        output.itemName = itemName;
+                        options.Destination = req.Params["destination"] + "/" + itemName;
 
+                        //create the item
+                        Sitecore.Data.Items.Item media_item = Sitecore.Resources.Media.MediaManager.Creator.CreateFromStream(stream, media_file.FileName, options);
+                        output.ID = media_item.ID.ToString();
+
+                        // change the template
+                        //string TemplateID = "{16692733-9A61-45E6-B0D4-4C0C06F8DD3C}";
+                        //Sitecore.Data.Items.TemplateItem template = master.GetTemplate(new Sitecore.Data.ID(TemplateID));
+                        //media_item.ChangeTemplate(template);
+
+                        // edit the fields
+                        media_item.Editing.BeginEdit();
+                        media_item.Fields["Title"].Value = req.Params["title"];
+                        media_item.Editing.EndEdit();
+
+                    //}
                 }
             }
             return new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(output);
