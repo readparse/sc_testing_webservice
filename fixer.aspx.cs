@@ -57,14 +57,6 @@ namespace AttachmentFixer
 
                                         string bytes = stream.Length.ToString();
                                         string type = stream.GetType().ToString();
-                                        /*
-                                        var command = new SqlCommand(sql, connection);
-                                        command.Parameters.AddWithValue("@index", 0);
-                                        command.Parameters.AddWithValue("@created", DateTime.UtcNow);
-                                        command.Parameters.Add("@data", System.Data.SqlDbType.Image, (Int32)stream.Length).Value = stream;
-                                        command.ExecuteNonQuery();
-                                        */
-
 
                                         item.Editing.BeginEdit();
                                         item.Fields["File Path"].Value = "";
@@ -102,30 +94,7 @@ namespace AttachmentFixer
                             Label1.Text += "<div>No item found for " + item_id + "</div>";
                         }
                     }
-
-                    /*
-                    //Sitecore.Collections.FieldCollection fields = child.Fields;
-                    string blob = child.Fields["Blob"].ToString();
-                    string path = child.Fields["File Path"].ToString();
-                    //Label1.Text += "<div>" + child.Name.ToString() + "</div>";
-                    if (blob != "")
-                    {
-                        ListBox1.Items.Add(new ListItem(child.Name.ToString() + " has a blob (" + blob + ")"));
-                        Label1.Text += "<div>" + child.Name.ToString() + " has a blob (<span class=blob>" + blob + "</span>)</div>";
-                    }
-                    else if (path != "")
-                    {
-                        ListBox1.Items.Add(new ListItem(child.Name.ToString() + " has a file path (" + path + ")"));
-                        Label1.Text += "<div>" + child.Name.ToString() + " has a file path (<span class=path>" + path + "</span>)</div>";
-                    }
-                    else
-                    {
-                        ListBox1.Items.Add(new ListItem(child.Name.ToString() + " nas neither"));
-                        Label1.Text += "<div>" + child.Name.ToString() + " has neither</div>";
-                    }
-                     */
                 }
-                //connection.Close();    
             }
         }
     }
