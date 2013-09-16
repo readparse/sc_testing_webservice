@@ -49,32 +49,38 @@ namespace AttachmentFixer
 
                                 string WebRoot = Request.ServerVariables.Get("APPL_PHYSICAL_PATH");
                                 string MediaPath = WebRoot + "\\" + media_item.FilePath;
-                                
-                                if (System.IO.File.Exists( MediaPath ))
+                                try
                                 {
-                                    System.IO.Stream stream = media_item.GetMediaStream();
-                                    
-                                    string bytes = stream.Length.ToString();
-                                    string type = stream.GetType().ToString();
-                                    /*
-                                    var command = new SqlCommand(sql, connection);
-                                    command.Parameters.AddWithValue("@index", 0);
-                                    command.Parameters.AddWithValue("@created", DateTime.UtcNow);
-                                    command.Parameters.Add("@data", System.Data.SqlDbType.Image, (Int32)stream.Length).Value = stream;
-                                    command.ExecuteNonQuery();
-                                    */
+                                    if (System.IO.File.Exists(MediaPath))
+                                    {
+                                        System.IO.Stream stream = media_item.GetMediaStream();
+
+                                        string bytes = stream.Length.ToString();
+                                        string type = stream.GetType().ToString();
+                                        /*
+                                        var command = new SqlCommand(sql, connection);
+                                        command.Parameters.AddWithValue("@index", 0);
+                                        command.Parameters.AddWithValue("@created", DateTime.UtcNow);
+                                        command.Parameters.Add("@data", System.Data.SqlDbType.Image, (Int32)stream.Length).Value = stream;
+                                        command.ExecuteNonQuery();
+                                        */
 
 
-                                    item.Editing.BeginEdit();
-                                    item.Fields["File Path"].Value = "";
-                                    item.Fields["Blob"].SetBlobStream((System.IO.Stream)stream);
-                                    item.Editing.EndEdit();
+                                        item.Editing.BeginEdit();
+                                        item.Fields["File Path"].Value = "";
+                                        item.Fields["Blob"].SetBlobStream((System.IO.Stream)stream);
+                                        item.Editing.EndEdit();
 
-                                    Label1.Text += "<div>" + item.Name.ToString() + ": <b>migrated</b></div>";
+                                        Label1.Text += "<div>" + item.Name.ToString() + ": <b>migrated</b></div>";
+                                    }
+                                    else
+                                    {
+                                        Label1.Text += "<div>" + item.Name.ToString() + ": <b>does not exist</b> (" + MediaPath + ")</div>";
+                                    }
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    Label1.Text += "<div>" + item.Name.ToString() + ": <b>does not exist</b> (" + MediaPath + ")</div>";
+                                    Label1.Text += "<div>Caught Exception " + ex.Message + " on item " + item.Name.ToString() + "</div>";
                                 }
 
                             }
