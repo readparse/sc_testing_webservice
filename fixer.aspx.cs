@@ -14,7 +14,9 @@ namespace AttachmentFixer
         
         protected void Page_Load(object sender, EventArgs e)
         {
-            
+            Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
+            string WebRoot = Request.ServerVariables.Get("APPL_PHYSICAL_PATH");
+            Label1.Text = WebRoot;
         }
 
         protected void Go_Click(object sender, EventArgs e)
@@ -45,7 +47,9 @@ namespace AttachmentFixer
                                 Sitecore.Data.Items.MediaItem media_item = new Sitecore.Data.Items.MediaItem(item);
                                 string size = media_item.Size.ToString();
 
-                                string MediaPath = DataRoot + "..\\Website" + media_item.FilePath;
+                                string WebRoot = Request.ServerVariables.Get("APPL_PHYSICAL_PATH");
+                                string MediaPath = WebRoot + "\\" + media_item.FilePath;
+                                
                                 if (System.IO.File.Exists( MediaPath ))
                                 {
                                     System.IO.Stream stream = media_item.GetMediaStream();
@@ -70,7 +74,7 @@ namespace AttachmentFixer
                                 }
                                 else
                                 {
-                                    Label1.Text += "<div>" + item.Name.ToString() + ": <b>does not exist</b></div>";
+                                    Label1.Text += "<div>" + item.Name.ToString() + ": <b>does not exist</b> (" + MediaPath + ")</div>";
                                 }
 
                             }
