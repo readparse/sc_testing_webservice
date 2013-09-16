@@ -11,9 +11,10 @@ namespace AttachmentFixer
 {
     public partial class fixer : System.Web.UI.Page
     {
+        
         protected void Page_Load(object sender, EventArgs e)
         {
-
+            
         }
 
         protected void Go_Click(object sender, EventArgs e)
@@ -23,11 +24,10 @@ namespace AttachmentFixer
             {
                 Label1.Text = "";
                 Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
-                //string connection_string = Sitecore.Configuration.Settings.GetConnectionString("master");
-                //SqlConnection connection = new SqlConnection(connection_string);
-                //connection.Open();
-                //string sql = "INSERT INTO [Blobs]( [Id], [BlobId], [Index], [Created], [Data] ) VALUES(   NewId(), NewId(), @index, @created, @data)";
-
+                string DataRoot = Sitecore.Configuration.Settings.DataFolder;
+                string MediaFiles = Sitecore.Configuration.Settings.GetSetting("Media.FileFolder").Replace('/', '\\');
+                //string MediaFileRoot = DataRoot + "..\\Website" + MediaFiles;
+                
                 string text = TextArea1.InnerText.ToString();
                 string[] lines = text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
                 foreach (string item_id in lines)
@@ -35,8 +35,6 @@ namespace AttachmentFixer
                     if (item_id != "")
                     {
 
-
-                        //Label1.Text += "<div>-" + item_id + "-</div>";
                         Sitecore.Data.Items.Item item = master.GetItem(new Sitecore.Data.ID(item_id));
                         if (item != null)
                         {
@@ -46,24 +44,35 @@ namespace AttachmentFixer
                             {
                                 Sitecore.Data.Items.MediaItem media_item = new Sitecore.Data.Items.MediaItem(item);
                                 string size = media_item.Size.ToString();
-                                System.IO.Stream stream = media_item.GetMediaStream();
-                                string bytes = stream.Length.ToString();
-                                string type = stream.GetType().ToString();
-                                /*
-                                var command = new SqlCommand(sql, connection);
-                                command.Parameters.AddWithValue("@index", 0);
-                                command.Parameters.AddWithValue("@created", DateTime.UtcNow);
-                                command.Parameters.Add("@data", System.Data.SqlDbType.Image, (Int32)stream.Length).Value = stream;
-                                command.ExecuteNonQuery();
-                                */
+
+                                string MediaPath = DataRoot + "..\\Website" + media_item.FilePath;
+                                if (System.IO.File.Exists( MediaPath ))
+                                {
+                                    System.IO.Stream stream = media_item.GetMediaStream();
+                                    
+                                    string bytes = stream.Length.ToString();
+                                    string type = stream.GetType().ToString();
+                                    /*
+                                    var command = new SqlCommand(sql, connection);
+                                    command.Parameters.AddWithValue("@index", 0);
+                                    command.Parameters.AddWithValue("@created", DateTime.UtcNow);
+                                    command.Parameters.Add("@data", System.Data.SqlDbType.Image, (Int32)stream.Length).Value = stream;
+                                    command.ExecuteNonQuery();
+                                    */
 
 
-                                item.Editing.BeginEdit();
-                                item.Fields["File Path"].Value = "";
-                                item.Fields["Blob"].SetBlobStream((System.IO.Stream)stream);
-                                item.Editing.EndEdit();
+                                    item.Editing.BeginEdit();
+                                    item.Fields["File Path"].Value = "";
+                                    item.Fields["Blob"].SetBlobStream((System.IO.Stream)stream);
+                                    item.Editing.EndEdit();
 
-                                Label1.Text += "<div>" + item.Name.ToString() + ": <b>migrated</b></div>";
+                                    Label1.Text += "<div>" + item.Name.ToString() + ": <b>migrated</b></div>";
+                                }
+                                else
+                                {
+                                    Label1.Text += "<div>" + item.Name.ToString() + ": <b>does not exist</b></div>";
+                                }
+
                             }
                             else if (blob != "") // This media item has a value in the "Blob" field, so it's stored in the database.
                             {
