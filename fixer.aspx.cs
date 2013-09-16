@@ -18,12 +18,14 @@ namespace AttachmentFixer
 
         protected void Go_Click(object sender, EventArgs e)
         {
+           
+
             Label1.Text = "";
             Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
-            string connection_string = Sitecore.Configuration.Settings.GetConnectionString("master");
-            SqlConnection connection = new SqlConnection(connection_string);
-            connection.Open();
-            string sql = "INSERT INTO [Blobs]( [Id], [BlobId], [Index], [Created], [Data] ) VALUES(   NewId(), NewId(), @index, @created, @data)";
+            //string connection_string = Sitecore.Configuration.Settings.GetConnectionString("master");
+            //SqlConnection connection = new SqlConnection(connection_string);
+            //connection.Open();
+            //string sql = "INSERT INTO [Blobs]( [Id], [BlobId], [Index], [Created], [Data] ) VALUES(   NewId(), NewId(), @index, @created, @data)";
 
             string text = TextArea1.InnerText.ToString();
             string[] lines = text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
@@ -46,7 +48,6 @@ namespace AttachmentFixer
                           System.IO.Stream stream = media_item.GetMediaStream();
                           string bytes = stream.Length.ToString();
                           string type = stream.GetType().ToString();
-
                           /*
                           var command = new SqlCommand(sql, connection);
                           command.Parameters.AddWithValue("@index", 0);
@@ -58,10 +59,10 @@ namespace AttachmentFixer
 
                           item.Editing.BeginEdit();
                           item.Fields["File Path"].Value = "";
-                          item.Fields["Blob"].SetBlobStream(stream);
+                          item.Fields["Blob"].SetBlobStream((System.IO.Stream)stream);
                           item.Editing.EndEdit();
 
-                          Label1.Text += "<div>" + item.Name.ToString() + ": <b>" + connection + "</b></div>";
+                          Label1.Text += "<div>" + item.Name.ToString() + ": <b>migrated</b></div>";
                       }
                       else if (blob != "") // This media item has a value in the "Blob" field, so it's stored in the database.
                       {
@@ -104,7 +105,7 @@ namespace AttachmentFixer
                 }
                  */
             }
-            connection.Close();    
+            //connection.Close();    
         }
         
     }
