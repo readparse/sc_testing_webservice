@@ -19,12 +19,13 @@
 <body>
     <form id="form1" runat="server">
     <div>
-        Start Item Path: <asp:TextBox ID="start_item" runat="server" Width="600"></asp:TextBox>
-        <asp:Button ID="Lookup" runat="server" Text="Lookup" onclick="Lookup_Click" />
+        Paste in your IDs in the field below and hit "Go".
+        <asp:Button ID="Go" runat="server" Text="Go" onclick="Go_Click" />
         <br />
-        <asp:ListBox ID="ListBox1" runat="server" Height="300" Width="800"></asp:ListBox>
+        <textarea ID="TextArea1" runat="server" cols=100 rows=20></textarea>
         <br />
-        <asp:Label ID="Label1" runat="server" Text="Label"></asp:Label>
+        <asp:Label ID="Label1" runat="server"></asp:Label>
+        
     </div>
     </form>
 </body>
