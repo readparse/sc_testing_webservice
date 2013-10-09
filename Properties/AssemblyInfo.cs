@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("AttachmentFixer")]
+[assembly: AssemblyTitle("SitecoreTestingService")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("HCA")]
-[assembly: AssemblyProduct("AttachmentFixer")]
+[assembly: AssemblyProduct("SitecoreTestingService")]
 [assembly: AssemblyCopyright("Copyright © HCA 2013")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("80f0b371-8157-458d-8759-5220bf2e234c")]
+[assembly: Guid("c314cda4-25b7-44b0-b223-3ff22269979c")]
 
 // Version information for an assembly consists of the following four values:
 //
