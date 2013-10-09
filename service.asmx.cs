@@ -208,7 +208,15 @@ namespace SitecoreTestingService
             item.load();
             return item;
         }
-
+        
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public Item get_item_bypath()
+        {
+            Sitecore.Data.Items.Item myItem = master.Items[req.Params["path"]];
+            return myItem;
+        }
+        
         [WebMethod]
         public int spiderman()
         {
@@ -245,7 +253,7 @@ namespace SitecoreTestingService
         public List<string> delete()
         {
             List<string> item_id_list = new List<string>();
-            if (req.Files.Count == 1)
+            if (req.Files.Count > 0)
             {
                 HttpPostedFile file = HttpContext.Current.Request.Files[0];
                 var stream = file.InputStream;
@@ -253,13 +261,42 @@ namespace SitecoreTestingService
 
                 using (new Sitecore.SecurityModel.SecurityDisabler())
                 {
-
                     Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
                     foreach (XElement tag in xml.Descendants())
                     {
                         if (tag.Name == "{/}string")
                         {
                             Sitecore.Data.ID itemID = Sitecore.Data.ID.Parse(tag.Value);
+							try
+							{
+								foreach (Sitecore.Data.Items.Item child in master.GetItem(itemID).Children)
+								{
+									foreach (ItemLink link in linkDatabase.GetReferrers(child))
+									{
+										Item sourceItem = link.GetSourceItem();
+										if (sourceItem != null)
+										{
+											foreach (Item item in sourceItem.Versions.GetVersions(true))
+											{
+												RemoveLink(item, link);
+											}
+										}
+									}
+								}
+								foreach (ItemLink link in linkDatabase.GetReferrers(Sitecore.Data.Items.Item item = master.GetItem(itemID)))
+								{
+									Item sourceItem = link.GetSourceItem();
+									if (sourceItem != null)
+									{
+										foreach (Item item in sourceItem.Versions.GetVersions(true))
+										{
+											RemoveLink(item, link);
+										}
+									}
+								}
+							}
+							catch
+							{}
                             try
                             {
                                 Sitecore.Data.Items.Item item = master.GetItem(itemID);
