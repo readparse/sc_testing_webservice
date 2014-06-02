@@ -1,4 +1,4 @@
-﻿using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -38,9 +38,10 @@ namespace SitecoreTestingService
             return outlist;
         }
 
+
         [WebMethod]
-        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
-        public string create_media_item()
+        //[ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public CreatedMediaItem create_media_item()
         {
             CreatedMediaItem output = new CreatedMediaItem();
             List<HttpPostedFile> files = new List<HttpPostedFile>();
@@ -57,7 +58,8 @@ namespace SitecoreTestingService
 
                     Sitecore.Resources.Media.MediaCreatorOptions options = new Sitecore.Resources.Media.MediaCreatorOptions();
                     options.Database = master;
-                    string itemName = media_file.FileName.Replace(".", "_").Replace("&", "_and_");
+                    string itemName = req.Params["item_name"];
+                    //string itemName = media_file.FileName.Replace(".jpg", "").Replace(".", "_").Replace("&", "_and_");
                     output.itemName = itemName;
                     options.Destination = req.Params["destination"] + "/" + itemName;
 
@@ -73,12 +75,13 @@ namespace SitecoreTestingService
                     // edit the fields
                     media_item.Editing.BeginEdit();
                     media_item.Fields["Title"].Value = req.Params["title"];
+                    media_item.Fields["Alt"].Value = req.Params["alt"];
                     media_item.Editing.EndEdit();
 
                     //}
                 }
             }
-            return new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(output);
+            return output;
 
 
             /*
@@ -97,8 +100,7 @@ namespace SitecoreTestingService
         }
 
         [WebMethod]
-        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
-        public string upload()
+        public List<string> upload()
         {
             List<string> item_id_list = new List<string>();
             if (req.Files.Count == 1)
@@ -130,13 +132,14 @@ namespace SitecoreTestingService
 
                                         Sitecore.Data.Items.Item newItem;
                                         ItemName = Regex.Replace(ItemName, "[^a-zA-Z0-9]+", " ");
+                                        newItem = parent.Add(ItemName.Trim(), template);
                                         try
                                         {
-                                            newItem = parent.Add(ItemName.Trim(), template);
+                                            
                                         }
                                         catch (AccessDeniedException e)
                                         {
-                                            return "Failure"; // item_id_list;
+                                            //return "Failure"; // item_id_list;
                                         }
 
                                         newItem.Editing.BeginEdit();
@@ -178,9 +181,28 @@ namespace SitecoreTestingService
                 }
 
             }
-            return new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(item_id_list);
+            return item_id_list;
+           
         }
 
+        [WebMethod]
+        public Collection<Item> get_child_items()
+        {
+            Collection<Item> items = new Collection<Item>();
+            string id = req.Params["id"];
+            var item = master.GetItem(new Sitecore.Data.ID(id));
+            Sitecore.Collections.ChildList children = item.GetChildren();
+            foreach (Sitecore.Data.Items.Item kid in children)
+            {
+                var i = new Item();
+                i.id = kid.ID.ToString();
+                i.load();
+                items.Add(i);
+            }
+            return items;
+        }
+
+        
         [WebMethod]
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public Collection<Item> get_items()
@@ -199,6 +221,36 @@ namespace SitecoreTestingService
         }
 
         [WebMethod]
+        public bool edit_item()
+        {
+            using (new Sitecore.SecurityModel.SecurityDisabler())
+            {
+                string id = req.Params["id"];
+                Sitecore.Data.Items.Item item = master.GetItem(new Sitecore.Data.ID(id));
+                item.Editing.BeginEdit();
+                try
+                {
+                    foreach (string name in req.Params)
+                    {
+                        
+                        if (name != "id" && name.ToUpper() != name) 
+                        {
+                        
+                            var value = req.Params[name];
+                            item.Fields[name].Value = value;
+                        
+                        }
+                    }
+                }
+                finally
+                {
+                }
+                item.Editing.EndEdit();
+            }
+            return true;
+        }
+
+        [WebMethod]
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public Item get_item()
         {
@@ -208,15 +260,7 @@ namespace SitecoreTestingService
             item.load();
             return item;
         }
-        
-        [WebMethod]
-        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
-        public Item get_item_bypath()
-        {
-            Sitecore.Data.Items.Item myItem = master.Items[req.Params["path"]];
-            return myItem;
-        }
-        
+
         [WebMethod]
         public int spiderman()
         {
@@ -253,7 +297,7 @@ namespace SitecoreTestingService
         public List<string> delete()
         {
             List<string> item_id_list = new List<string>();
-            if (req.Files.Count > 0)
+            if (req.Files.Count == 1)
             {
                 HttpPostedFile file = HttpContext.Current.Request.Files[0];
                 var stream = file.InputStream;
@@ -261,42 +305,13 @@ namespace SitecoreTestingService
 
                 using (new Sitecore.SecurityModel.SecurityDisabler())
                 {
+
                     Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
                     foreach (XElement tag in xml.Descendants())
                     {
                         if (tag.Name == "{/}string")
                         {
                             Sitecore.Data.ID itemID = Sitecore.Data.ID.Parse(tag.Value);
-							try
-							{
-								foreach (Sitecore.Data.Items.Item child in master.GetItem(itemID).Children)
-								{
-									foreach (ItemLink link in linkDatabase.GetReferrers(child))
-									{
-										Item sourceItem = link.GetSourceItem();
-										if (sourceItem != null)
-										{
-											foreach (Item item in sourceItem.Versions.GetVersions(true))
-											{
-												RemoveLink(item, link);
-											}
-										}
-									}
-								}
-								foreach (ItemLink link in linkDatabase.GetReferrers(Sitecore.Data.Items.Item item = master.GetItem(itemID)))
-								{
-									Item sourceItem = link.GetSourceItem();
-									if (sourceItem != null)
-									{
-										foreach (Item item in sourceItem.Versions.GetVersions(true))
-										{
-											RemoveLink(item, link);
-										}
-									}
-								}
-							}
-							catch
-							{}
                             try
                             {
                                 Sitecore.Data.Items.Item item = master.GetItem(itemID);
@@ -314,19 +329,43 @@ namespace SitecoreTestingService
             return item_id_list;
         }
         [WebMethod]
-        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
-        public bool publish()
+        //[ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public string publish()
         {
-
+            using (new Sitecore.SecurityModel.SecurityDisabler())
+            {
                 Sitecore.Data.Database master = Sitecore.Data.Database.GetDatabase("master");
                 Sitecore.Data.Database web = Sitecore.Data.Database.GetDatabase("web");
-                var options = new Sitecore.Publishing.PublishOptions(master, web, Sitecore.Publishing.PublishMode.Smart, Sitecore.Globalization.Language.Parse("en"), System.DateTime.Now);
+                string mode = req.Params["mode"];
+                if (mode == "")
+                {
+                    mode = "site";
+                }
+                Sitecore.Publishing.PublishMode publishMode = Sitecore.Publishing.PublishMode.Incremental;
+                if (mode == "item")
+                {
+                    publishMode = Sitecore.Publishing.PublishMode.SingleItem;
+                }
+
+                var options = new Sitecore.Publishing.PublishOptions(master, web, publishMode, Sitecore.Globalization.Language.Parse("en"), System.DateTime.Now);
+                string id = req.Params["id"];
+                //return id;
+                if (mode == "item" && id != "")
+                {
+                    //return "I have an item and an ID of " + id;
+                    Sitecore.Data.ID itemID = Sitecore.Data.ID.Parse(id);
+                    options.RootItem = master.GetItem(itemID);
+
+                }
+
+                //return options.RootItem.Name;
                 var publisher = new Sitecore.Publishing.Publisher(options);
 
-                publisher.Options.RootItem = master.GetItem("/sitecore/content/healthtrust");
+                //publisher.Options.RootItem = master.GetItem("/sitecore/content/employee/home");
                 publisher.Options.Deep = true;
-                publisher.Publish();
-                return true;
+                publisher.PublishAsync();
+                }
+                return "yo!";
         }
     }
     public class Item
